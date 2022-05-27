@@ -17,13 +17,13 @@
 
 ##### 视觉效果
 
-![](asserts/pic.jpeg)
+![](assets/pic.jpeg)
 
 ##### 实验效果
 
 此模型的精度超过了目前超分辨率领域顶尖的SwinIR模型，且计算性能极大提升。
 
-![](asserts/tab.jpeg)
+![](assets/tab.jpeg)
 
 #### 业界实际运用情况
 
