@@ -50,3 +50,9 @@
 
 
 ## 精度与加速效果
+
+
+## 相关的项目
+
+- ELAN算法的官方仓库：[xindongzhang](https://github.com/xindongzhang)/[ELAN](https://github.com/xindongzhang/ELAN)
+
