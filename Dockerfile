@@ -1,0 +1,1 @@
+FROM nvcr.io/nvidia/tensorrt:22.05-py3
