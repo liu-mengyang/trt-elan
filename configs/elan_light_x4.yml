@@ -32,5 +32,5 @@ threads: 8
 
 ## data specification
 data_path: '/target/SR_datasets'
-pretrain: '/workspace/TRT-ELAN/weights/elan_light_fp32_x4_500e.pt'
+pretrain: '/workspace/weights/elan_light_fp32_x4_500e.pt'
 eval_sets: ['Set5', 'Set14', 'B100', 'Urban100', 'Manga109']
