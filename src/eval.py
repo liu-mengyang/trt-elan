@@ -4,6 +4,8 @@ import utils
 import os
 
 import torch
+import torch.nn as nn
+
 from tqdm import tqdm
 
 from datas.utils import create_datasets
@@ -16,7 +18,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.config:
         opt = vars(args)
-        yaml_args = yaml.load(open(args.config), loader=yaml.FullLoader)
+        yaml_args = yaml.load(open(args.config), Loader=yaml.FullLoader)
         opt.update(yaml_args)
     print('use cuda & cudnn for acceleration!')
     print('the gpu id is: {}'.format(args.gpu_ids))
@@ -25,7 +27,7 @@ if __name__ == "__main__":
     torch.set_num_threads(args.threads)
 
     model = utils.import_module('models.{}_network'.format(args.model, args.model)).create_model(args)
-    
+    model = nn.DataParallel(model).to(device)
     # Loading weights
     print('load pretrained model: {}!'.format(args.pretrain))
     ckpt = torch.load(args.pretrain)
