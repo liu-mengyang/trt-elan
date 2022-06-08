@@ -1,1 +1,1 @@
-python eval.py --config="/workspace/trt-elan/configs/elan_x4.yml"
+python3 eval.py --config="/workspace/trt-elan/configs/elan_x4.yml"
