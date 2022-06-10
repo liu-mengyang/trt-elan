@@ -115,7 +115,7 @@ print('ONNX time: ', time_onnx)
 throughout_onnx = 1000 / time_onnx * batch_size
 print('ONNX throughout: ', throughout_onnx)
 
-print('Average diff between onnx and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - output_onnx[0]) / np.abs(output_pytorch.detach().cpu().numpy())))
+print('Average diff between onnx and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - output_onnx[0]) / (np.abs(output_pytorch.detach().cpu().numpy() + 1e-6))))
 
 # test surgeoned onnx performance
 print('====', 'ONNX surgeoned', '====')
@@ -139,7 +139,7 @@ print('ONNX surgeoned time: ', time_onnx_sed)
 throughout_onnx_sed = 1000 / time_onnx_sed * batch_size
 print('ONNX surgeoned throughout: ', throughout_onnx_sed)
 
-print('Average diff between onnx and onnx_sed: ', np.mean(np.abs(output_onnx[0] - output_onnx_sed[0]) / np.abs(output_onnx[0])))
+print('Average diff between onnx and onnx_sed: ', np.mean(np.abs(output_onnx[0] - output_onnx_sed[0]) / (np.abs(output_onnx[0]) + 1e-6)))
 
 # test FP32 tensorrt performance
 
