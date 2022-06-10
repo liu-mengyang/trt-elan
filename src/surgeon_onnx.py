@@ -69,5 +69,13 @@ mod_23_o0.inputs[0] = sub_mod_23.outputs[0]
 mod_23_o1.inputs[0] = sub_mod_23.outputs[0]
 mod_23.outputs.clear()
 
+# unmatch pad op
+# cast_51 = [node for node in graph.nodes if node.name=="Cast_51"][0]
+# cast_51_new_out = gs.Variable("cast_51_new_out", dtype=np.INT32)
+# cast_51_new = gs.Node(name="cast_51_new", op="Cast", inputs=cast_51.inputs, outputs=[cast_51_new_out], attrs={"to":getattr(onnx.TensorProto, 'FLOAT')})
+# graph.nodes.append(cast_51_new)
+# cast_51.o().inputs[1] = cast_51_new_out
+# cast_51.outputs.clear()
+
 graph.cleanup().toposort()
 onnx.save(gs.export_onnx(graph), "elan_x4_sed.onnx")
