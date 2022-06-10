@@ -11,7 +11,7 @@ class ReflectPad(nn.Module):
     def forward(self, input):
         out = F.pad(input, (0, 1, 0, 2), "reflect")
         return out
-    
+
 input = torch.arange(9, dtype=torch.float).reshape(1, 1, 3, 3).cuda()
 print(input)
 rp = ReflectPad().cuda()

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+python3 unit.py
 
 trtexec \
         --onnx=unit.onnx \
