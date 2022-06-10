@@ -115,13 +115,31 @@ print('ONNX time: ', time_onnx)
 throughout_onnx = 1000 / time_onnx * batch_size
 print('ONNX throughout: ', throughout_onnx)
 
-print(output_pytorch.detach().cpu().numpy()) 
-print(output_onnx[0])
-
 print('Average diff between onnx and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - output_onnx[0]) / np.abs(output_pytorch.detach().cpu().numpy())))
 
 # test surgeoned onnx performance
+print('====', 'ONNX surgeoned', '====')
+onnx_sed_model = onnx.load("elan_x4_sed.onnx")
+onnx.checker.check_model(onnx_sed_model)
 
+ort_sess_sed = ort.InferenceSession('elan_x4_sed.onnx', providers=['CUDAExecutionProvider'])
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    output_onnx_sed = ort_sess_sed.run(None, {'lr': test_lr.numpy()})
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    output_onnx_sed = ort_sess_sed.run(None, {'lr': test_lr.numpy()})
+torch.cuda.synchronize()
+time_onnx_sed = (time.time() - t0) * 1000 / nRound
+print('ONNX surgeoned time: ', time_onnx_sed)
+throughout_onnx_sed = 1000 / time_onnx_sed * batch_size
+print('ONNX surgeoned throughout: ', throughout_onnx_sed)
+
+print('Average diff between onnx and onnx_sed: ', np.mean(np.abs(output_onnx[0] - output_onnx_sed[0]) / np.abs(output_onnx[0])))
 
 # test FP32 tensorrt performance
 
