@@ -38,7 +38,7 @@ if __name__ == "__main__":
     model.eval()
     
     # export
-    input_data = torch.randn(1, 3, 64, 64, dtype=torch.float32, device='cuda')
+    input_data = torch.randn(1, 3, 80, 80, dtype=torch.float32, device='cuda')
     
     input_names = ['lr']
     output_names = ['hr']

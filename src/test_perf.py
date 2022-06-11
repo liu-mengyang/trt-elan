@@ -42,18 +42,21 @@ torch.backends.cudnn.benchmark = True
 torch.set_num_threads(args.threads)
 torch.set_grad_enabled(False)
 
-model = utils.import_module('models.{}_network'.format(args.model, args.model)).create_model(args)
-model = nn.DataParallel(model).to(device)
+model_raw = utils.import_module('models.{}_network'.format(args.model, args.model)).create_model(args)
+model = nn.DataParallel(model_raw).to(device)
 # Loading weights
 print('load pretrained model: {}!'.format(args.pretrain))
 ckpt = torch.load(args.pretrain)
 model.load_state_dict(ckpt['model_state_dict'])
 model = model.eval()
 
+test_lr = model_raw.check_image_size(test_lr)
+print(test_lr.shape)
 test_lr_cu = test_lr.cuda()
 nWarmRound = 10
 for i in range(nWarmRound):
     output_pytorch = model(test_lr_cu)
+print(output_pytorch.shape)
 
 nRound = 100
 torch.cuda.synchronize()
@@ -155,7 +158,7 @@ if engine == None:
 print("Succeeded loading engine!")
 
 context = engine.create_execution_context()
-context.set_binding_shape(0, [1, 3, 64, 64])
+context.set_binding_shape(0, [1, 3, 80, 80])
 print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
 print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
 

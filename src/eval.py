@@ -26,8 +26,8 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
     torch.set_num_threads(args.threads)
 
-    model = utils.import_module('models.{}_network'.format(args.model, args.model)).create_model(args)
-    model = nn.DataParallel(model).to(device)
+    model_raw = utils.import_module('models.{}_network'.format(args.model, args.model)).create_model(args)
+    model = nn.DataParallel(model_raw).to(device)
     # Loading weights
     print('load pretrained model: {}!'.format(args.pretrain))
     ckpt = torch.load(args.pretrain)
@@ -48,7 +48,10 @@ if __name__ == "__main__":
         loader = valid_dataloader['dataloader']
         for lr, hr in tqdm(loader, ncols=80):
             lr, hr = lr.to(device), hr.to(device)
+            H, W = lr.shape[2:]
+            lr = model_raw.check_image_size(lr)
             sr = model(lr)
+            sr = sr[:, :, 0:H*model_raw.scale, 0:W*model_raw.scale]
             # quantize output to [0, 255]
             hr = hr.clamp(0, 255)
             sr = sr.clamp(0, 255)

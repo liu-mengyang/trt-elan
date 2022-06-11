@@ -56,8 +56,8 @@ class ELAN(nn.Module):
         self.tail = nn.Sequential(*m_tail)
 
     def forward(self, x):
-        H, W = x.shape[2:]
-        x = self.check_image_size(x)
+        # H, W = x.shape[2:]
+        # x = self.check_image_size(x)
         
         x = self.sub_mean(x)
         x = self.head(x)
@@ -66,7 +66,8 @@ class ELAN(nn.Module):
         x = self.tail(res)
         x = self.add_mean(x)
 
-        return x[:, :, 0:H*self.scale, 0:W*self.scale]
+        # return x[:, :, 0:H*self.scale, 0:W*self.scale]
+        return x
 
     def check_image_size(self, x):
         _, _, h, w = x.size()
