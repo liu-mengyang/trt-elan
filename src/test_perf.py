@@ -9,6 +9,9 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 
+import tensorrt as trt
+from cuda import cudart
+
 import utils
 
 
@@ -142,4 +145,47 @@ print('ONNX surgeoned throughout: ', throughout_onnx_sed)
 print('Average diff between onnx and onnx_sed: ', np.mean(np.abs(output_onnx[0] - output_onnx_sed[0]) / (np.abs(output_onnx[0]) + 1e-6)))
 
 # test FP32 tensorrt performance
+print('====', 'TensorRT', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('elan_x4.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
 
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 64, 64])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+throughput_trt = 1000 / time_trt * batch_size
+print('TRT throughput: ', throughput_trt)
+
+print('Average diff between trt and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - outputH0) / (np.abs(output_pytorch.detach().cpu().numpy() + 1e-6))))
+
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
