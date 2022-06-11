@@ -201,6 +201,7 @@ if engine == None:
     exit()
 print("Succeeded loading engine!")
 
+
 context = engine.create_execution_context()
 context.set_binding_shape(0, [1, 3, 80, 80])
 print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
