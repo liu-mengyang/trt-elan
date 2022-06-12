@@ -14,12 +14,51 @@ from cuda import cudart
 
 import utils
 
+tableHead = \
+"""
+bs: Batch Size
+width: Image width
+height: Image height
+lt: Latency (ms)
+tp: throughput (image/s)
+max-a0: maximum of absolute difference of output 0
+med-a0: median of absolute difference of output 0
+mea-a0: mean of absolute difference of output 0
+max-r0: maximum of absolute difference of output 0
+med-r0: median of relative difference of output 0
+mea-r0: mean of relative difference of output 0
+----+-----+------+--------+---------+---------+---------+---------+---------+---------+---------+-------------
+  bs|width|height|      lt|       tp|   max-a0|   med-a0|   mea-a0|   max-r0|   med-r0|   mea-r0| output check
+----+-----+------+--------+---------+---------+---------+---------+---------+---------+---------+-------------
+"""
+
+def printArrayInfo(x, description=""):
+    print( '%s: %s\n  Mean=%.5e,SumAbs=%.5e,Var=%.5e,Max=%.5f,Min=%.5f,SAD=%.5e'%( \
+        description,str(x.shape),np.mean(x),np.sum(abs(x)),np.var(x),np.max(x),np.min(x),np.sum(np.abs(np.diff(x.reshape(-1)))) ))
+    print("\t", x.reshape(-1)[:10])
+
+def check(a, b, weak=False, epsilon = 1e-5):
+    if weak:
+        res = np.all( np.abs(a - b) < epsilon )
+    else:
+        res = np.all( a == b )
+    abs_diff = np.abs(a - b)
+    rel_diff = np.abs(a - b) / (np.abs(b) + epsilon)
+    diff0 = np.max(abs_diff)
+    diff1 = np.median(abs_diff)
+    diff2 = np.mean(abs_diff)
+    diff3 = np.max(rel_diff)
+    diff4 = np.median(rel_diff)
+    diff5 = np.mean(rel_diff)
+    #print("check:",res,diff0,diff1)
+    return res,diff0,diff1,diff2,diff3,diff4,diff5
 
 parser = argparse.ArgumentParser(description='ELAN')
 parser.add_argument('--config', type=str, default=None, help='config file for evaluation and training')
 
 # prepare test data
 batch_size = 1
+batchSize = 1
 channel = 3
 height = 80
 width = 80
@@ -69,36 +108,6 @@ print('Pytorch time: ', time_pytorch)
 throughout_pytorch = 1000 / time_pytorch * batch_size
 print('Pytorch throughout: ', throughout_pytorch)
 
-# start = torch.cuda.Event(enable_timing=True)
-# end = torch.cuda.Event(enable_timing=True)
-# stream = torch.cuda.current_stream()
-# stream.record_event(start)
-# for i in range(nRound):
-#     output_pytorch = model(test_lr)
-# stream.record_event(end)
-# end.synchronize()
-# time_pytorch = start.elapsed_time(end) / nRound
-# print('Pytorch time: ', time_pytorch)
-# throughout_pytorch = 1000 / time_pytorch * batch_size
-# print('Pytorch throughout: ', throughout_pytorch)
-
-# time_pytorch_list = []
-# for i in range(nRound):
-#     start = torch.cuda.Event(enable_timing=True)
-#     end = torch.cuda.Event(enable_timing=True)
-#     stream = torch.cuda.current_stream()
-#     stream.record_event(start)
-#     output_pytorch = model(test_lr)
-#     stream.record_event(end)
-#     end.synchronize()
-#     time_pytorch_list.append(start.elapsed_time(end))
-# mean_time_pytorch = np.sum(time_pytorch_list) / nRound
-# std_time_pytorch = np.std(time_pytorch_list)
-# print('Pytorch time: ', mean_time_pytorch)
-# print('StdVar: ', std_time_pytorch)
-# throughout_pytorch = 1000 / mean_time_pytorch * batch_size
-# print('Pytorch throughout: ', throughout_pytorch)
-
 # test onnx performance
 print('====', 'ONNX', '====')
 onnx_model = onnx.load("elan_x4.onnx")
@@ -117,11 +126,27 @@ for i in range(nRound):
     output_onnx = ort_sess.run(None, {'lr': test_lr.numpy()})
 torch.cuda.synchronize()
 time_onnx = (time.time() - t0) * 1000 / nRound
-print('ONNX time: ', time_onnx)
-throughout_onnx = 1000 / time_onnx * batch_size
-print('ONNX throughout: ', throughout_onnx)
+# print('ONNX time: ', time_onnx)
+# throughout_onnx = 1000 / time_onnx * batch_size
+# print('ONNX throughout: ', throughout_onnx)
 
-print('Average diff between onnx and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - output_onnx[0]) / (np.abs(output_pytorch.detach().cpu().numpy() + 1e-6))))
+print('****Average diff between onnx and pytorch****')
+print(tableHead)
+timePerInference = time_onnx
+check0 = check(output_onnx[0],output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
 
 # test surgeoned onnx performance
 print('====', 'ONNX surgeoned', '====')
@@ -142,10 +167,26 @@ for i in range(nRound):
 torch.cuda.synchronize()
 time_onnx_sed = (time.time() - t0) * 1000 / nRound
 print('ONNX surgeoned time: ', time_onnx_sed)
-throughout_onnx_sed = 1000 / time_onnx_sed * batch_size
-print('ONNX surgeoned throughout: ', throughout_onnx_sed)
+# throughout_onnx_sed = 1000 / time_onnx_sed * batch_size
+# print('ONNX surgeoned throughout: ', throughout_onnx_sed)
 
-print('Average diff between onnx and onnx_sed: ', np.mean(np.abs(output_onnx[0] - output_onnx_sed[0]) / (np.abs(output_onnx[0]) + 1e-6)))
+print('****Average diff between onnx_sed and pytorch****')
+print(tableHead)
+timePerInference = time_onnx_sed
+check0 = check(output_onnx_sed[0],output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
 
 # test FP32 tensorrt performance
 print('====', 'TensorRT fp32', '====')
@@ -183,10 +224,28 @@ for i in range(nRound):
 torch.cuda.synchronize()
 time_trt = (time.time() - t0) * 1000 / nRound
 print('TRT time: ', time_trt)
-throughput_trt = 1000 / time_trt * batch_size
-print('TRT throughput: ', throughput_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
 
-print('Average diff between trt and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - outputH0) / (np.abs(output_pytorch.detach().cpu().numpy() + 1e-6))))
+print('****Average diff between trt fp32 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
 
 cudart.cudaFree(inputD0)
 cudart.cudaFree(outputD0)
@@ -228,10 +287,27 @@ for i in range(nRound):
 torch.cuda.synchronize()
 time_trt = (time.time() - t0) * 1000 / nRound
 print('TRT time: ', time_trt)
-throughput_trt = 1000 / time_trt * batch_size
-print('TRT throughput: ', throughput_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
 
-print('Average diff between trt and pytorch: ', np.mean(np.abs(output_pytorch.detach().cpu().numpy() - outputH0) / (np.abs(output_pytorch.detach().cpu().numpy() + 1e-6))))
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
 
 cudart.cudaFree(inputD0)
 cudart.cudaFree(outputD0)
