@@ -47,9 +47,13 @@ if __name__ == "__main__":
         name = valid_dataloader['name']
         loader = valid_dataloader['dataloader']
         for lr, hr in tqdm(loader, ncols=80):
+            print("raw")
+            print(lr.shape)
             lr, hr = lr.to(device), hr.to(device)
             H, W = lr.shape[2:]
             lr = model_raw.check_image_size(lr)
+            print("processed")
+            print(lr.shape)
             sr = model(lr)
             sr = sr[:, :, 0:H*model_raw.scale, 0:W*model_raw.scale]
             # quantize output to [0, 255]
