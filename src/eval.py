@@ -1,6 +1,5 @@
 import argparse
 import yaml
-import utils
 import os
 
 import torch
@@ -9,7 +8,7 @@ import torch.nn as nn
 from tqdm import tqdm
 
 from datas.utils import create_datasets
-
+import utils
 
 parser = argparse.ArgumentParser(description='ELAN')
 parser.add_argument('--config', type=str, default=None, help='config file for evaluation and training')
