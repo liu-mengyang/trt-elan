@@ -30,11 +30,19 @@ with open(onnxFile, 'rb') as model:
         exit()
     print("Succeeded parsing .onnx file!")
 
+
+for layer in network:
+    if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
+        continue
+    if layer.type in [trt.LayerType.CONVOLUTION]:
+        layer.precision = trt.DataType.HALF
+
+
 total = 0
 for layer in network:
     if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
         continue
-    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
+    if layer.type in [trt.LayerType.CONVOLUTION]:
         total += 1
 
 
@@ -60,19 +68,3 @@ for layer in network:
 
 
         layer.precision = trt.DataType.HALF
-        for i in range(layer.num_outputs):
-            layer.get_output(i).dtype = trt.DataType.HALF
-        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
-        
-        lr = network.get_input(0)
-        
-        profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
-        config.add_optimization_profile(profile)
-        
-        engineString = builder.build_serialized_network(network, config)
-        if engineString == None:
-            print("Failed building engine!")
-            exit()
-        print("Succeeded building engine!")
-        with open(trtFile16 % layer.name, 'wb') as f:
-            f.write(engineString)
