@@ -31,9 +31,9 @@ with open(onnxFile, 'rb') as model:
 
 total = 0
 for layer in network:
-    if layer.precision != trt.DataType.FLOAT:
+    if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
         continue
-    if layer.type in [trt.LayerType.CONVOLUTION]:
+    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
         total += 1
         layer.precision = trt.DataType.HALF
         for i in range(layer.num_outputs):
