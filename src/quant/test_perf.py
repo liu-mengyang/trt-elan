@@ -259,7 +259,7 @@ print(test_log)
 
 
 
-# int8-trt
+# int8-trt-ptq
 logger = trt.Logger(trt.Logger.ERROR)
 with open('elan_x4_int8.plan', 'rb') as f:
     engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())

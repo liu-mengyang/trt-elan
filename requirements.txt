@@ -8,3 +8,4 @@ einops
 timm
 onnxruntime-gpu
 pytorch-quantization
+nvidia-pyindex
