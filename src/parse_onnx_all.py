@@ -9,17 +9,15 @@ trtFile = "./elan_x4_partly_half.plan"
 
 cudart.cudaDeviceSynchronize()
 
-logger = trt.Logger(trt.Logger.INFO)
+logger = trt.Logger(trt.Logger.VERBOSE)
 trt.init_libnvinfer_plugins(logger, '')
 
 builder = trt.Builder(logger)
 network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
 profile = builder.create_optimization_profile()
 config = builder.create_builder_config()
-config.flags = config.flags | 1 << int(trt.BuilderFlag.FP16) | 1 << int(trt.BuilderFlag.DEBUG)
 config.set_flag(trt.BuilderFlag.FP16)
-config.set_flag(trt.BuilderFlag.DEBUG)
-config.set_flag(trt.BuilderFlag.STRICT_TYPES)
+config.set_flag(trt.BuilderFlag.PREFER_PRECISION_CONSTRAINTS)
 config.max_workspace_size = 3 << 30
 config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
 parser = trt.OnnxParser(network, logger)
@@ -35,12 +33,11 @@ total = 0
 for layer in network:
     if layer.precision != trt.DataType.FLOAT:
         continue
-    if layer.type in [trt.LayerType.CONVOLUTION, """trt.LayerType.ELEMENTWISE""", trt.LayerType.MATRIX_MULTIPLY]:
+    if layer.type in [trt.LayerType.CONVOLUTION]:
         total += 1
-        layer.precision = layer.precision
-        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
-    else:
         layer.precision = trt.DataType.HALF
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.HALF
         print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
 
 lr = network.get_input(0)
