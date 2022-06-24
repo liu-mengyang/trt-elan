@@ -93,9 +93,11 @@ if __name__ == '__main__':
         for i, batch in enumerate(train_dataloader):
             
             lr, hr = batch
+            H, W = lr.shape[2:]
             lr = model_raw.check_image_size(lr)
             lr, hr = lr.to(device), hr.to(device)
             sr = model(lr)
+            sr = sr[:, :, 0:H*model_raw.scale, 0:W*model_raw.scale]
             if i >= nCalibrationBatchSize:
                 break
         
@@ -122,7 +124,7 @@ if __name__ == '__main__':
         else:
             for percentile in percentileList:
                 computeArgMax(model, method="percentile")
-                modelName = "./model-percentile-%f-%d.pth"%(percentile,nCalibrationBatchSize * trainLoader.batch_size)
+                modelName = "./model-percentile-%f-%d.pth"%(percentile,nCalibrationBatchSize * train_dataloader.batch_size)
 
             for method in ["mse", "entropy"]:
                 computeArgMax(model, method=method)
@@ -131,7 +133,9 @@ if __name__ == '__main__':
     print("Succeeded calibrating model in pyTorch!")
     
     # finetune in pyTorch
-    for epoch in range(100):
+    model.cuda()
+    
+    for epoch in range(10):
         epoch_loss = 0.0
         model = model.train()
         opt_lr = scheduler.get_last_lr()
@@ -148,6 +152,7 @@ if __name__ == '__main__':
             epoch_loss += float(loss)
 
             if (iter + 1) % args.log_every == 0:
+                timer_start = time.time()
                 cur_steps = (iter+1)*args.batch_size
                 total_steps = len(train_dataloader.dataset)
                 fill_width = math.ceil(math.log10(total_steps))
@@ -163,12 +168,12 @@ if __name__ == '__main__':
                 timer_start = timer_end
                 print('Epoch:{}, {}/{}, loss: {:.4f}, time: {:.3f}'.format(cur_epoch, cur_steps, total_steps, avg_loss, duration))
 
-    torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'scheduler_state_dict': scheduler.state_dict()
-            }, modelName)
+        torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict()
+                }, modelName)
     
     # eval
     torch.set_grad_enabled(False)
