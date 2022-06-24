@@ -5,7 +5,8 @@ import tensorrt as trt
 
 
 onnxFile = "./elan_x4_sed.onnx"
-trtFile = "./plans/elan_x4_to_fp16_%s.plan"
+trtFile32 = "./plans/elan_x4_to_fp32_%s.plan"
+trtFile16 = "./plans/elan_x4_to_fp16_%s.plan"
 
 cudart.cudaDeviceSynchronize()
 
@@ -35,6 +36,29 @@ for layer in network:
         continue
     if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
         total += 1
+
+
+        
+        layer.precision = trt.DataType.FLOAT
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.FLOAT
+        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+        
+        lr = network.get_input(0)
+        
+        profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
+        config.add_optimization_profile(profile)
+        
+        engineString = builder.build_serialized_network(network, config)
+        if engineString == None:
+            print("Failed building engine!")
+            exit()
+        print("Succeeded building engine!")
+        with open(trtFile32 % layer.name, 'wb') as f:
+            f.write(engineString)
+        
+
+
         layer.precision = trt.DataType.HALF
         for i in range(layer.num_outputs):
             layer.get_output(i).dtype = trt.DataType.HALF
@@ -50,5 +74,5 @@ for layer in network:
             print("Failed building engine!")
             exit()
         print("Succeeded building engine!")
-        with open(trtFile % layer.name, 'wb') as f:
+        with open(trtFile16 % layer.name, 'wb') as f:
             f.write(engineString)
