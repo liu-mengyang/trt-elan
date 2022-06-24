@@ -60,8 +60,8 @@ parser.add_argument('--config', type=str, default=None, help='config file for ev
 batch_size = 1
 batchSize = 1
 channel = 3
-height = 80
-width = 80
+height = 304
+width = 208
 
 test_lr = torch.randn([batch_size, channel, height, width], dtype=torch.float32)
 print('****  ', batch_size, '  ****')
@@ -199,7 +199,7 @@ if engine == None:
 print("Succeeded loading engine!")
 
 context = engine.create_execution_context()
-context.set_binding_shape(0, [1, 3, 80, 80])
+context.set_binding_shape(0, [1, 3, 304, 208])
 print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
 print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
 
@@ -256,7 +256,7 @@ if engine == None:
 print("Succeeded loading engine!")
 
 context = engine.create_execution_context()
-context.set_binding_shape(0, [1, 3, 80, 80])
+context.set_binding_shape(0, [1, 3, 304, 208])
 print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
 print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
 
@@ -317,7 +317,7 @@ print("Succeeded loading engine!")
 
 
 context = engine.create_execution_context()
-context.set_binding_shape(0, [1, 3, 80, 80])
+context.set_binding_shape(0, [1, 3, 304, 208])
 print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
 print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
 
