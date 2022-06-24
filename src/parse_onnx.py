@@ -39,7 +39,7 @@ else:
         print("Succeeded parsing .onnx file!")
         
     lr = network.get_input(0)
-    profile.set_shape(lr.name, (1, 3, 64, 64), (1, 3, 80, 80), (1, 3, 120, 120))
+    profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
     config.add_optimization_profile(profile)
     
     engineString = builder.build_serialized_network(network, config)
