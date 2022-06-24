@@ -367,10 +367,12 @@ print(string)
 cudart.cudaFree(inputD0)
 cudart.cudaFree(outputD0)
 
+
+
 # test FP16 tensorrt performance
-print('====', 'TensorRT 手工 fp16', '====')
+print('====', 'TensorRT 全锁 fp16', '====')
 logger = trt.Logger(trt.Logger.ERROR)
-with open('elan_x4_partly_half.plan', 'rb') as f:
+with open('plans/elan_x4_to_fp16.plan', 'rb') as f:
     engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
 if engine == None:
     print("Failed loading engine!")
@@ -426,3 +428,332 @@ print(string)
 
 cudart.cudaFree(inputD0)
 cudart.cudaFree(outputD0)
+
+
+
+
+# test FP16 tensorrt performance
+print('====', 'TensorRT 全锁 fp32', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('plans/elan_x4_to_fp32.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 304, 208])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
+
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
+
+
+
+
+
+
+
+# test FP16 tensorrt performance
+print('====', 'TensorRT 卷积锁 fp16', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('plans/elan_x4_to_fp16_conv.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 304, 208])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
+
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
+
+
+
+
+
+
+
+# test FP16 tensorrt performance
+print('====', 'TensorRT 卷积锁 fp32', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('plans/elan_x4_to_fp32_conv.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 304, 208])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
+
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
+
+
+
+
+
+
+
+# test FP16 tensorrt performance
+print('====', 'TensorRT 矩阵乘锁 fp16', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('plans/elan_x4_to_fp16_matm.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 304, 208])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
+
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
+
+
+
+
+
+
+
+# test FP16 tensorrt performance
+print('====', 'TensorRT 矩阵乘锁 fp32', '====')
+logger = trt.Logger(trt.Logger.ERROR)
+with open('plans/elan_x4_to_fp32_matm.plan', 'rb') as f:
+    engine = trt.Runtime(logger).deserialize_cuda_engine(f.read())
+if engine == None:
+    print("Failed loading engine!")
+    exit()
+print("Succeeded loading engine!")
+context = engine.create_execution_context()
+context.set_binding_shape(0, [1, 3, 304, 208])
+print("EngineBinding0->", engine.get_binding_shape(0), engine.get_binding_dtype(0))
+print("EngineBinding1->", engine.get_binding_shape(1), engine.get_binding_dtype(1))
+
+inputH0 = np.ascontiguousarray(test_lr.numpy().reshape(-1))
+outputH0 = np.empty(context.get_binding_shape(1), dtype=trt.nptype(engine.get_binding_dtype(1)))
+_, inputD0 = cudart.cudaMalloc(inputH0.nbytes)
+_, outputD0 = cudart.cudaMalloc(outputH0.nbytes)
+
+nWarmRound = 10
+for i in range(nWarmRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+
+nRound = 100
+torch.cuda.synchronize()
+t0 = time.time()
+for i in range(nRound):
+    cudart.cudaMemcpy(inputD0, inputH0.ctypes.data, inputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+    context.execute_v2([int(inputD0), int(outputD0)])
+    cudart.cudaMemcpy(outputH0.ctypes.data, outputD0, outputH0.nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+torch.cuda.synchronize()
+time_trt = (time.time() - t0) * 1000 / nRound
+print('TRT time: ', time_trt)
+# throughput_trt = 1000 / time_trt * batch_size
+# print('TRT throughput: ', throughput_trt)
+
+print('****Average diff between trt fp16 and pytorch****')
+print(tableHead)
+timePerInference = time_trt
+check0 = check(outputH0,output_pytorch.detach().cpu().numpy(),True,5e-5)
+string = "%4d,%6d,%6d,%8.3f,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e,%9.3e"%(batchSize,
+                                                                        width,
+                                                                        height,
+                                                                        timePerInference,
+                                                                        batchSize/timePerInference*1000,
+                                                                        check0[1],
+                                                                        check0[2],
+                                                                        check0[3],
+                                                                        check0[4],
+                                                                        check0[5],
+                                                                        check0[6])
+print(string)
+# print(string + ", %s"%("Good" if check0[1] < 3.5e-2 and check0[2] < 2e-3 and check1[2] < 1e-1 else "Bad"))
+
+
+cudart.cudaFree(inputD0)
+cudart.cudaFree(outputD0)
+
+

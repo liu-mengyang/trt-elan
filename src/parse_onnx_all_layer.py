@@ -31,6 +31,62 @@ with open(onnxFile, 'rb') as model:
 
 
 
+trtFile = "./plans/elan_x4_to_fp32.plan"
+total = 0
+for layer in network:
+    if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
+        continue
+    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
+        total += 1
+        layer.precision = trt.DataType.FLOAT
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.FLOAT
+        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+
+lr = network.get_input(0)
+
+profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
+config.add_optimization_profile(profile)
+
+engineString = builder.build_serialized_network(network, config)
+if engineString == None:
+    print("Failed building engine!")
+    exit()
+print("Succeeded building engine!")
+with open(trtFile, 'wb') as f:
+    f.write(engineString)
+
+
+
+
+trtFile = "./plans/elan_x4_to_fp16.plan"
+total = 0
+for layer in network:
+    if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
+        continue
+    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
+        total += 1
+        layer.precision = trt.DataType.HALF
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.HALF
+        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+
+lr = network.get_input(0)
+
+profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
+config.add_optimization_profile(profile)
+
+engineString = builder.build_serialized_network(network, config)
+if engineString == None:
+    print("Failed building engine!")
+    exit()
+print("Succeeded building engine!")
+with open(trtFile, 'wb') as f:
+    f.write(engineString)
+
+
+
+
 trtFile = "./plans/elan_x4_to_fp32_conv.plan"
 total = 0
 for layer in network:
