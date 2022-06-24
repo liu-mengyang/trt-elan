@@ -36,6 +36,8 @@ for layer in network:
         continue
     if layer.type in [trt.LayerType.CONVOLUTION]:
         layer.precision = trt.DataType.HALF
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.HALF
 
 
 total = 0
@@ -68,3 +70,5 @@ for layer in network:
 
 
         layer.precision = trt.DataType.HALF
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.HALF
