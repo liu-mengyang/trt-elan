@@ -26,16 +26,11 @@ if __name__ == "__main__":
     torch.set_num_threads(args.threads)
 
     model = utils.import_module('models.qdqelan_network'.format(args.model, args.model)).create_model(args)
-    model = model.to(device)
     # Loading weights
     print('load pretrained model: {}!'.format(args.pretrain))
     ckpt = torch.load(args.pretrain)
-    new_state_dict = OrderedDict()
-    for k, v in ckpt['model_state_dict'].items():
-        name = k[7:]
-        new_state_dict[name] = v
     
-    model.load_state_dict(new_state_dict)
+    model.load_state_dict(ckpt['model_state_dict'])
     print(model)
     model.eval()
     
