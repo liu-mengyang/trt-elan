@@ -9,21 +9,18 @@ trtFile = "./elan_x4_partly_half.plan"
 
 cudart.cudaDeviceSynchronize()
 
-logger = trt.Logger(trt.Logger.INFO)
+logger = trt.Logger(trt.Logger.VERBOSE)
 trt.init_libnvinfer_plugins(logger, '')
 
 builder = trt.Builder(logger)
 network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
 profile = builder.create_optimization_profile()
 config = builder.create_builder_config()
-config.flags = config.flags | 1 << int(trt.BuilderFlag.FP16) | 1 << int(trt.BuilderFlag.DEBUG)
+config.set_flag(trt.BuilderFlag.FP16)
+config.set_flag(trt.BuilderFlag.PREFER_PRECISION_CONSTRAINTS)
 config.max_workspace_size = 3 << 30
 config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
 parser = trt.OnnxParser(network, logger)
-if not os.path.exists(onnxFile):
-    print("Failed finding onnx file!")
-    exit()
-print("Succeeded finding onnx file!")
 with open(onnxFile, 'rb') as model:
     if not parser.parse(model.read()):
         print("Failed parsing .onnx file!")
@@ -32,15 +29,18 @@ with open(onnxFile, 'rb') as model:
         exit()
     print("Succeeded parsing .onnx file!")
 
-lr = network.get_input(0)
-
 total = 0
 for layer in network:
-    if layer.type in [trt.LayerType.CONVOLUTION, """trt.LayerType.ELEMENTWISE""", trt.LayerType.MATRIX_MULTIPLY]:
+    if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
+        continue
+    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
         total += 1
-        print(total, layer.type, layer.precision, layer.precision_is_set)
         layer.precision = trt.DataType.HALF
-        print(total, layer.type, layer.precision, layer.precision_is_set)
+        for i in range(layer.num_outputs):
+            layer.get_output(i).dtype = trt.DataType.HALF
+        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+
+lr = network.get_input(0)
 
 profile.set_shape(lr.name, (1, 3, 304, 208), (1, 3, 304, 208), (1, 3, 304, 208))
 config.add_optimization_profile(profile)
