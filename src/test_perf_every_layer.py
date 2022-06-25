@@ -492,7 +492,7 @@ for layer in network:
                                                                             check0[6])
     print(string)
     
-    with open((trtFile32 % layer.name)+'.txt', 'rb') as f:
+    with open((trtFile32 % layer.name)+'.txt', 'w') as f:
         f.write(time_trt+","+string)
 
 
