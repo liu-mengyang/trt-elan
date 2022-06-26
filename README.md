@@ -22,7 +22,14 @@
 
 ### 特性
 
-
+- [x] 固定尺寸优化
+- [ ] 动态尺寸优化
+- [x] FP16量化
+- [x] 精度优化的FP16量化
+- [x] INT8 PTQ
+- [x] INT8 QAT
+- [ ] LFE Plugin
+- [ ] GMSA Plugin
 
 ### 项目使用指南
 
