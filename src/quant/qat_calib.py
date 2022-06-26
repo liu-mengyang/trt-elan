@@ -231,7 +231,7 @@ if __name__ == '__main__':
                       do_constant_folding=True,
                       verbose=True,
                       keep_initializers_as_inputs=True,
-                      opset_version=13,
+                      opset_version=15,
                       dynamic_axes={"lr": {0: "batch_size", 2: "width", 3: "height"},
                                     "hr": {0: "batch_size", 2: "width", 3: "height"}})
     
