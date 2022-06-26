@@ -5,6 +5,35 @@
 
 ## 总述
 
+### 原始模型信息
+
+- 模型名称：ELAN，Efficient Long-Range Attention Network for Image Super-resollution，[arxiv link](https://arxiv.org/abs/2203.06697)，[code link](https://github.com/xindongzhang/ELAN)。已投稿ECCV2022。
+- 模型任务：图像超分辨率任务
+- 模型特点：轻量级模型；在轻量级限制下，击败SwinIR效果；结合使用卷积与自注意力机制打造基于类Transformer结构但更轻量化的超分模型。
+
+### 优化效果
+
+使用超分任务常用验证集Manga109作为测试基准数据集，使用NVIDIA A10作为测试机器。加速比计算使用TensorRT运行时间比上PyTorch运行时间。
+
+- FP32下可以做到无损精度，加速比为1.19
+- TF32下可以做到近无损精度，加速比为1.39
+- FP16下可以做到验证集无损精度，加速比为2.14
+- INT8 QAT下理论可达验证集无损精度，加速比为2.53
+
+### 特性
+
+
+
+### 项目使用指南
+
+#### 安装
+
+
+
+#### 使用
+
+
+
 ## 原始模型
 
 ### 模型简介
@@ -48,8 +77,115 @@
 
 ## 优化过程
 
+### 预处理部分的不同处理方式
+
+修剪图。
+
+遭遇ReflectPadding不成功支持BUG。
+
+可参考玮神给出的Workaround进行支持。
+
+也可直接跳过对预处理过程的TRT化。
+
+### FP32导出
+
+【描述】
+
+### TF32导出
+
+【描述】
+
+
+### FP16导出
+
+#### 精度问题分析
+
+
+
+#### 精度问题修正
+
+
+
+### INT8量化
+
+#### PTQ方案
+
+【描述】
+
+#### QAT方案
+
+【描述】
+
+### Profiling分析
+
+GPU利用率很高
+
+
+
+TensorRT起作用的主要因素
+
+
+
+开销较大的层
+
+
+
+LFE GMSA Plugin化潜力
+
+
 
 ## 精度与加速效果
+
+使用超分任务常用验证集Manga109作为测试基准数据集，使用NVIDIA A10作为测试机器。加速比计算使用TensorRT运行时间比上PyTorch运行时间。
+
+### 加速效果
+
+【时延柱形图】
+
+【压力测试下折线图】
+
+### 验证集精度
+
+【精度对比表格】
+
+### 张量对齐精度
+
+【张量精度对比表格】
+
+QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这部分工作仍在推进中，故当前本仓库仅提供了QAT的完整代码，但QAT的完整方案还在生成测试中。
+
+
+
+## 仍然存在的问题
+
+- 暂时未能支持Dynamic Shape，【描述】
+
+## Bug报告
+
+### ReflectPadding Parse Error
+
+- Environment
+  - NVIDIA A10
+  - TensorRT 8.4GA
+  - CUDA 11.6
+  - CuDNN 8.4.0
+  - CUBLAS 11.9.2
+  - NVIDIA Driver 510.73.08
+
+- Reproduction Steps
+  - 运行单元测试程序
+- Expected Behavior
+  - 根据【官方更新信息】，应该可以正确导出该OP，且支持reflect模式
+- Actual Behavior
+  - Error
+- Additional Notes
+  - 可暂时参考玮神给出的workaround解决该问题。可以对应支持到一些未能给出解答的帖子。
+
+## 经验与体会
+
+
+
+
 
 
 ## 相关的项目
