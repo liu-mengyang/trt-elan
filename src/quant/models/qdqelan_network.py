@@ -179,9 +179,13 @@ class ShiftConv2d0(nn.Module):
         self.w = conv3x3.weight
         self.b = conv3x3.bias
         self.m = mask
+        self.real_conv3x3 = qnn.QuantConv2d(inp_channels, out_channels, 3, 1, 1)
+        self.real_conv3x3.weight = self.w * self.m
+        self.real_conv3x3.bias = self.b
 
     def forward(self, x):
-        y = F.conv2d(input=x, weight=self.w * self.m, bias=self.b, stride=1, padding=1) 
+        y = self.real_conv3x3(x)
+        # y = F.conv2d(input=x, weight=self.w * self.m, bias=self.b, stride=1, padding=1) 
         return y
 
 
@@ -199,11 +203,14 @@ class ShiftConv2d1(nn.Module):
         self.weight[2*g:3*g, 0, 2, 1] = 1.0 ## up
         self.weight[3*g:4*g, 0, 0, 1] = 1.0 ## down
         self.weight[4*g:, 0, 1, 1] = 1.0 ## identity     
+        self.real_conv3x3 = qnn.QuantConv2d(inp_channels, inp_channels, 3, 1, 1, bias=None, groups=inp_channels)
+        self.real_conv3x3.weight = self.weight
 
         self.conv1x1 = qnn.QuantConv2d(inp_channels, out_channels, 1)
 
     def forward(self, x):
-        y = F.conv2d(input=x, weight=self.weight, bias=None, stride=1, padding=1, groups=self.inp_channels)
+        y = self.real_conv3x3(x)
+        # y = F.conv2d(input=x, weight=self.weight, bias=None, stride=1, padding=1, groups=self.inp_channels)
         y = self.conv1x1(y) 
         return y
 
@@ -263,7 +270,7 @@ class GMSA(nn.Module):
                 qnn.QuantConv2d(self.channels, self.channels*2, kernel_size=1), 
                 nn.BatchNorm2d(self.channels*2)
             )
-            self.project_out = nn.Conv2d(channels, channels, kernel_size=1)
+            self.project_out = qnn.QuantConv2d(channels, channels, kernel_size=1)
         else:
             self.split_chns  = [channels//3, channels//3,channels//3]
             self.project_inp = nn.Sequential(
