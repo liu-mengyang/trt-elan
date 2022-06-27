@@ -225,7 +225,7 @@ if __name__ == '__main__':
     
     torch.onnx.export(model.module,
                       input_data,
-                      'elan_x4_qat_3f1.onnx',
+                      'elan_x4_qat_1f1.onnx',
                       input_names=input_names,
                       output_names=output_names,
                       do_constant_folding=True,
