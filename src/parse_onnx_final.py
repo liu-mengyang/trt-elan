@@ -30,6 +30,7 @@ with open(onnxFile, 'rb') as model:
     print("Succeeded parsing .onnx file!")
 
 except_layer = [
+"Conv_14691",
 "Conv_6885",
 "Conv_9344",
 "Conv_7698",
@@ -49,6 +50,7 @@ except_layer = [
 "Conv_12608",
 "Conv_12246",
 "Conv_12254",
+"Conv_14240",
 ]
 
 total = 0
