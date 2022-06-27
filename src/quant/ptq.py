@@ -91,7 +91,7 @@ class MangaEntropyCalibrator(trt.IInt8EntropyCalibrator2):
 
 # original model data
 class ModelData(object):
-    MODEL_PATH = "elan_x4.onnx"
+    MODEL_PATH = "../elan_x4.onnx"
     OUTPUT_NAME = "elan_x4_int8"
     # The original model is a float32 one.
     DTYPE = trt.float32
@@ -138,7 +138,7 @@ def build_int8_engine(onnx_filepath, calib, max_batch_size=32):
             f.write(engine.serialize())
         return engine
 
-val_data = '~/lmy_target/SR_datasets/benchmark/Manga109/LR_bicubic/val'
+val_data = './calib_data'
 calibration_cache = "manga_calibration.cache"
 calib = MangaEntropyCalibrator(val_data, cache_file=calibration_cache, batch_size = 4)
 
