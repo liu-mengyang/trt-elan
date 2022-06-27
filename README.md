@@ -43,7 +43,73 @@
 
 #### 使用
 
+##### 以不同模式导出模型并进行精度对比
 
+###### 直接使用`trtexec`导出模型
+
+```sh
+./parse_onxx_tf32.sh # 以tf32模式导出模型
+./parse_onxx_fp16.sh # 以fp16模式导出模型
+python parse_onxx_all_layer.py # 以fp16模式导出模型
+```
+
+###### 使用Python TensorRT导出模型
+
+```sh
+python parse_onxx_all_layer.py
+```
+
+Python脚本`parse_onxx_all_layer.py`中包含以下四种模型导出方式：
+* 在FP16模式下将所有卷积层和矩阵乘精度锁定为FP32，输出文件`plans/elan_x4_to_fp32.plan`
+* 在FP16模式下将所有卷积层和矩阵乘精度锁定为FP16，输出文件`plans/elan_x4_to_fp16.plan`
+* 在FP16模式下将所有卷积层精度锁定为FP32，输出文件`plans/elan_x4_to_fp32_conv.plan`
+* 在FP16模式下将所有卷积层精度锁定为FP16，输出文件`plans/elan_x4_to_fp16_conv.plan`
+* 在FP16模式下将所有矩阵乘精度锁定为FP32，输出文件`plans/elan_x4_to_fp32_matm.plan`
+* 在FP16模式下将所有矩阵乘精度锁定为FP16，输出文件`plans/elan_x4_to_fp16_matm.plan`
+
+###### 进行精度对比
+
+```sh
+python test_pref.py
+```
+
+Python脚本`test_pref.py`会分别读取以下模型文件进行精度测试，并将其与原始Pytorch模型进行对比：
+* `elan_x4.onnx`
+* `elan_x4_sed.onnx`
+* `elan_x4.plan`
+* `plans/elan_x4_to_fp32.plan`
+* `plans/elan_x4_to_fp16.plan`
+* `plans/elan_x4_to_fp32_conv.plan`
+* `plans/elan_x4_to_fp16_conv.plan`
+* `plans/elan_x4_to_fp32_matm.plan`
+* `plans/elan_x4_to_fp16_matm.plan`
+
+##### 寻找最佳FP16方案
+
+在寻找最佳FP16方案的过程中，我们将FP16模式下分别将每一个卷积层设置为FP32模式并执行测试，以找到对模型精度影响最大的层。
+
+###### 导出模型并进行测试
+
+我们首先FP16模式下分别将每一个卷积层设置为FP32模式，从而生成约200个plan文件，在每个plan文件生成后随即进行测试，进而又生成约200个测试结果：
+```python
+python test_pref.py
+```
+
+此过程在A10 GPU上耗时约72小时。
+
+###### 汇总测试结果
+
+测试完成后，我们汇总所有测试结果，从而找到对模型精度影响最大的层。
+```python
+python layer_delay_count.py
+```
+
+###### 生成最佳FP16方案并测试
+
+```python
+python parse_onxx_final.py
+python test_pref_final.py
+```
 
 ## 原始模型
 
