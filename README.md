@@ -45,7 +45,7 @@
 
 1. 下载数据集：[url] (pwd: al4m)
 
-2. 解压数据集，得到数据集目录`SR_datasets`放至任意位置
+2. 解压数据集，得到数据集目录`SR_datasets`放至`./datasets/`
 
 #### 安装
 
