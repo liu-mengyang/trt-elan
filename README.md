@@ -94,14 +94,15 @@ ELAN超分模型在初始时有一个比例化图像剪裁的预处理工作，�
 
 ### FP32导出
 
-【描述】
+FP32的导出十分顺利，直接导出即可，几乎不存在精度误差。
 
 ### TF32导出
 
-【描述】
-
+TF32的导出也十分顺利，直接导出即可，存在可以被忽略的精度误差。
 
 ### FP16导出
+
+FP16的直接导出在张量测试中会遭遇较为严重的精度误差，为此需要进行分析与修正工作。
 
 #### 精度问题分析
 
@@ -113,13 +114,23 @@ ELAN超分模型在初始时有一个比例化图像剪裁的预处理工作，�
 
 ### INT8量化
 
+对于INT8量化工作，本仓库提供了PTQ（Post Training Quantization）与QAT（Quantization-Aware Training）两种实现。限于大赛规定的比赛时间，在性能测评中QAT方案并没有给出一个完全训练好的plan，但提供的相关实现代码已十分完整。
+
 #### PTQ方案
 
-【描述】
+PTQ的过程较为简单，构造了一个基于Manga109验证集继承`trt.IInt8EntropyCalibrator2`类的校准器，结合校准器对FP32精度的ONNX模型进行了PTQ INT8量化。这一方案操作简单，耗时短，但得到的精度结果并不喜人。
 
 #### QAT方案
 
-【描述】
+QAT的过程分为如下几个步骤：
+
+1. 使用`pytorch_quantization`包中提供的`QuantConv2d`替换占据推理大部分计算时长的PyTorch卷积层，构造`QDQELAN`；
+2. 在PyTorch中对`QDQELAN`进行完整训练；
+3. 在PyTorch中对完整训练好的`QDQELAN`基于训练集进行校准与微调；
+4. 导出携带QDQ层的`QDQELAN`ONNX模型；
+5. 转换`QDQELAN`ONNX模型为INT8 TensorRT模型；
+
+
 
 ### Profiling分析
 
