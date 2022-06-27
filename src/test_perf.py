@@ -110,10 +110,10 @@ print('Pytorch throughout: ', throughout_pytorch)
 
 # test onnx performance
 print('====', 'ONNX', '====')
-onnx_model = onnx.load("elan_x4.onnx")
+onnx_model = onnx.load("/weights/elan_x4.onnx")
 onnx.checker.check_model(onnx_model)
 
-ort_sess = ort.InferenceSession('elan_x4.onnx', providers=['CUDAExecutionProvider'])
+ort_sess = ort.InferenceSession('/weights/elan_x4.onnx', providers=['CUDAExecutionProvider'])
 
 nWarmRound = 10
 for i in range(nWarmRound):
