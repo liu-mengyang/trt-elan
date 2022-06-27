@@ -69,12 +69,12 @@ docker build -t trt-elan .
 ##### 启动
 
 ```sh
-docker run --rm -it -v $(pwd)/datasets:/workspace/trt-elan/datasets -v $(pwd)/weights:/workspace/trt-elan/weights -v $(pwd)/src:/workspace/trt-elan/src --gpus all trt-elan
+docker run --rm -it -v $(pwd)/datasets:/datasets -v $(pwd)/weights:/weights -v $(pwd)/src:/workspace/trt-elan/src --gpus all trt-elan
 ```
 
 在docker容器内：
 ```sh
-chmod +x /workspace/trt-elan/src
+chmod +x /workspace/trt-elan/src/*
 cd /workspace/trt-elan/src
 ```
 
@@ -152,7 +152,7 @@ python layer_delay_count.py
 ```sh
 python parse_onnx_final.py
 ./test_pref_final.sh
-python3 quant/test_perf_fp16.py --config ../configs/elan_x4_local.yml
+python quant/test_perf_fp16.py --config ../configs/elan_x4_local.yml
 ```
 
 ##### INT8 量化
