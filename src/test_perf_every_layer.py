@@ -437,6 +437,8 @@ for layer in network:
         for i in range(layer.num_outputs):
             layer.get_output(i).dtype = trt.DataType.HALF
 
+    if os.path.isfile((trtFile32 % layer.name)+'.txt'):
+        continue
     # test FP16 tensorrt performance
     print('====', 'TensorRT 测试 %s' % (trtFile32 % layer.name), '====')
     logger = trt.Logger(trt.Logger.ERROR)
