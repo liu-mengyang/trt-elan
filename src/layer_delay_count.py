@@ -28,5 +28,5 @@ print("\n")
 
 for i in mea:
     if i[1] < 0.7:
-        print("%d\t%f"%(i[0],i[1]))
+        print("\"Conv_%d\"," % i[0])
     
