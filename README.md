@@ -71,7 +71,13 @@ docker build -t trt-elan .
 ##### 启动
 
 ```sh
-docker run --rm -it -v $(pwd)/datasets:/workspace/trt-elan/datasets -v $(pwd)/weights:/workspace/trt-elan/weights -v $(pwd)/src:/workspace/trt-elan/src trt-elan
+docker run --rm -it -v $(pwd)/datasets:/workspace/trt-elan/datasets -v $(pwd)/weights:/workspace/trt-elan/weights -v $(pwd)/src:/workspace/trt-elan/src --gpus all trt-elan
+```
+
+在docker容器内：
+```sh
+chmod +x /workspace/trt-elan/src
+cd /workspace/trt-elan/src
 ```
 
 ##### 导出ONNX
@@ -86,19 +92,19 @@ python surgeon_onnx.py
 ###### 直接使用`trtexec`导出模型
 
 ```sh
-./parse_onxx.sh # 以fp32模式导出模型
-./parse_onxx_tf32.sh # 以tf32模式导出模型
-./parse_onxx_fp16.sh # 以fp16模式导出模型
-python parse_onxx_all_layer.py # 以fp16模式导出模型
+./parse_onnx.sh # 以fp32模式导出模型
+./parse_onnx_tf32.sh # 以tf32模式导出模型
+./parse_onnx_fp16.sh # 以fp16模式导出模型
+python parse_onnx_all_layer.py # 以fp16模式导出模型
 ```
 
 ###### 使用Python TensorRT导出模型
 
 ```sh
-python parse_onxx_all_layer.py
+python parse_onnx_all_layer.py
 ```
 
-Python脚本`parse_onxx_all_layer.py`中包含以下四种模型导出方式：
+Python脚本`parse_onnx_all_layer.py`中包含以下四种模型导出方式：
 * 在FP16模式下将所有卷积层和矩阵乘精度锁定为FP32，输出文件`plans/elan_x4_to_fp32.plan`
 * 在FP16模式下将所有卷积层和矩阵乘精度锁定为FP16，输出文件`plans/elan_x4_to_fp16.plan`
 * 在FP16模式下将所有卷积层精度锁定为FP32，输出文件`plans/elan_x4_to_fp32_conv.plan`
@@ -146,8 +152,9 @@ python layer_delay_count.py
 ###### 生成最佳FP16方案并测试
 
 ```sh
-python parse_onxx_final.py
+python parse_onnx_final.py
 ./test_pref_final.sh
+python3 quant/test_perf_fp16.py --config ../configs/elan_x4_local.yml
 ```
 
 ##### INT8 量化
@@ -383,12 +390,11 @@ ELAN的主体是由多个ELAB块组成的，而ELAB块主要由LFE和GMSA组成�
 | 项目                    | max-a0 | med-a0 | mea-a0 | max-r0 | med-r0 | mea-r0 |
 | ----------------------- | ------ | ------ | ------ | ------ | ------ | ------ |
 | ONNX runtime            |        |        |        |        |        |        |
-| TensorRT FP32           |        |        |        |        |        |        |
-| TensorRT TF32           |        |        |        |        |        |        |
+| TensorRT FP32           |    0.06718    |    0.002052    |    0.002553    |    147.7    |    0.00227    |    0.01407    |
+| TensorRT TF32           |    0.04621    |   0.001808     |   0.002242     |   152.6     |    0.001996    |    0.01252    |
 | TensorRT FP16           |        |        |        |        |        |        |
-| TensorRT FP16 optimized |        |        |        |        |        |        |
+| TensorRT FP16 optimized |    0.2708    |    0.02801    |      0.02449  |     1141   |    0.02289    |   0.1483     |
 
-QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这部分工作仍在推进中，故当前本仓库仅提供了QAT的完整代码，但QAT的完整方案还在生成测试中。
 
 ### 量化精度对比
 
