@@ -45,7 +45,7 @@
 
 #### 准备数据集
 
-1. 下载数据集：[url] (pwd: al4m)
+1. 下载数据集：[url](https://pan.baidu.com/s/15WjlGRhYOtVNRYTj3lfE6A) (pwd: al4m)
 2. 解压数据集，得到数据集目录`SR_datasets`放至`./datasets/`
 3. 删除验证集中不支持尺寸的图片
   ```sh
@@ -54,8 +54,11 @@
   ```
 
 4. 在`weights`文件夹中放置以下文件：
-   * model_x4_437.pt：PyTorch原始权重文件
-   * model_x4_1.pt：QAT过程中训练得到的单epoch QDQELAN训练结果
+   * model_x4_437.pt：PyTorch原始权重文件 [url](https://pan.baidu.com/s/1g8TJWciLbqEUixsLjRoDZQ) (pwd: rrtg)
+   * model_x4_1.pt：QAT过程中训练得到的单epoch QDQELAN训练结果 [url](https://pan.baidu.com/s/1aNY2hxU8a5Oo0_mSfVMecg) (pwd: mnqr)
+  
+5. 【可选】在A10机器上预生成的QAT 1epoch训练1epoch调优int8 plan：
+   * elan_x4_qat_1f1.plan [url](https://pan.baidu.com/s/1tUjmrL2zJrxgEE4tLP3_1A) (pwd: 7m83)
 
 #### 安装
 
@@ -362,7 +365,7 @@ ELAN的主体是由多个ELAB块组成的，而ELAB块主要由LFE和GMSA组成�
 | TensorRT FP32           | 31.51 | 0.9232 |
 | TensorRT TF32           | 31.51 | 0.9232 |
 | TensorRT FP16           | 31.51 | 0.9231 |
-| TensorRT FP16 optimized |       |        |
+| TensorRT FP16 optimized | 31.51 | 0.9232 |
 
 ### 张量对齐精度
 
