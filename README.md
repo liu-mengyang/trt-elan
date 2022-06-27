@@ -48,7 +48,7 @@
 3. 删除验证集中不支持尺寸的图片
   ```sh
   rm ./datasets/SR_datasets/benchmark/Manga109/LR_bicubic/X4/PrayerHaNemurenaix4.png
-  rm ./datasets/Manga109/HR/PrayerHaNemurenai.png
+  rm ./datasets/SR_datasets/benchmark/Manga109/HR/PrayerHaNemurenai.png
   ```
 
 4. 在`weights`文件夹中放置以下文件：
