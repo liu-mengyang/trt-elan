@@ -9,3 +9,4 @@ timm
 onnxruntime-gpu
 nvidia-pyindex
 pytorch-quantization
+matplotlib
