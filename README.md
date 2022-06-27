@@ -113,10 +113,10 @@ Python脚本`parse_onnx_all_layer.py`中包含以下四种模型导出方式：
 ###### 进行精度对比
 
 ```sh
-python test_pref.py
+python test_perf.py
 ```
 
-Python脚本`test_pref.py`会分别读取以下模型文件进行精度测试，并将其与原始Pytorch模型进行对比：
+Python脚本`test_perf.py`会分别读取以下模型文件进行精度测试，并将其与原始Pytorch模型进行对比：
 * `elan_x4.onnx`
 * `elan_x4_sed.onnx`
 * `elan_x4.plan`
@@ -151,7 +151,7 @@ python layer_delay_count.py
 
 ```sh
 python parse_onnx_final.py
-./test_pref_final.sh
+./test_perf_final.sh
 python quant/test_perf_fp16.py --config ../configs/elan_x4_local.yml
 ```
 
