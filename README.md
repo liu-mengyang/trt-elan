@@ -49,7 +49,17 @@
 
 #### 安装
 
-1. 启用dockerfile进行自动配置
+```sh
+docker build -t trt-elan .
+```
+
+#### 使用
+
+##### 启动
+
+```sh
+docker run --rm -it -v $(pwd)/src:/src trt-elan
+```
 
 
 #### 使用
