@@ -152,7 +152,7 @@ python layer_delay_count.py
 ```sh
 python parse_onnx_final.py
 ./test_perf_final.sh
-python quant/test_perf_fp16.py --config ../configs/elan_x4_local.yml
+python quant/test_perf_fp16.py --config ../configs/elan_x4_pretrained.yml
 ```
 
 ##### INT8 量化
