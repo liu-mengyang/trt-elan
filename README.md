@@ -34,15 +34,26 @@
 
 ### 项目使用指南
 
-#### 项目结构
-
 #### 项目实验平台
+
+- NVIDIA A10
+- TensorRT 8.4GA
+- CUDA 11.6
+- CuDNN 8.4.0
+- CUBLAS 11.9.2
+- NVIDIA Driver 510.73.08
 
 #### 准备数据集
 
 1. 下载数据集：[url] (pwd: al4m)
 2. 解压数据集，得到数据集目录`SR_datasets`放至`./datasets/`
-3. 在`weights`文件夹中放置以下文件：
+3. 删除验证集中不支持尺寸的图片
+  ```sh
+  rm ./datasets/SR_datasets/benchmark/Manga109/LR_bicubic/X4/PrayerHaNemurenaix4.png
+  rm ./datasets/Manga109/HR/PrayerHaNemurenai.png
+  ```
+
+4. 在`weights`文件夹中放置以下文件：
    * model_x4_437.pt：PyTorch原始权重文件
    * model_x4_1.pt：QAT过程中训练得到的单epoch QDQELAN训练结果
 
@@ -131,9 +142,53 @@ python layer_delay_count.py
 
 ###### 生成最佳FP16方案并测试
 
-```python
+```sh
 python parse_onxx_final.py
 python test_perf_final.py
+```
+
+##### INT8 量化
+
+进入int8量化工作目录
+```sh
+cd src/quant/
+```
+
+**PTQ方案**
+
+```sh
+python ptq.py --config ../../configs/elan_4_pretrained.yml
+```
+
+INT8量化后的模型`elan_x4_int8.plan`得到生成。
+
+**QAT方案**
+
+**注意：** 推荐在多卡机器上进行QAT的训练任务，测试环境并不能有效完成该项目内对于QDQELAN的预训练代码。也可直接下载本项目提供的1 epoch预训练模型跳过预训练过程。
+
+1. 预训练QDQELAN模型
+
+  ```sh
+  python qat_train.py --config ../../configs/elan_x4_qat_pre.yml
+  ```
+
+  如此，可以得到预训练1个epoch的模型`model_x4_1.pt`在`./experiments`中，将模型复制到`weights`目录下。
+
+
+2. TensorRT INT8 量化
+
+  ```sh
+  python qat_calib.py --config ../../configs/elan_x4_qat.yml
+  ```
+
+  如此，可以得到生成的INT8模型`elan_x4_qat_1f1.plan`。
+
+##### 测试量化精度
+
+对比1 epoch模型、PTQ模型和QAT模型的精度差异。
+
+```sh
+python test_perf.py --config ../../configs/elan_x4_qat.yml
 ```
 
 ## 原始模型
