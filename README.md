@@ -165,7 +165,7 @@ cd src/quant/
 **PTQ方案**
 
 ```sh
-python ptq.py --config ../../configs/elan_4_pretrained.yml
+python ptq.py --config ../../configs/elan_x4_pretrained.yml
 ```
 
 INT8量化后的模型`elan_x4_int8.plan`得到生成。
