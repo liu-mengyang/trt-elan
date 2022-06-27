@@ -135,7 +135,7 @@ Python脚本`test_perf.py`会分别读取以下模型文件进行精度测试，
 
 我们首先FP16模式下分别将每一个卷积层设置为FP32模式，从而生成约200个plan文件，在每个plan文件生成后随即进行测试，进而又生成约200个测试结果：
 ```sh
-./test_pref_every_layer.sh
+./test_perf_every_layer.sh
 ```
 
 此过程在A10 GPU上耗时约72小时。
