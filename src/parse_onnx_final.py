@@ -52,9 +52,11 @@ total = 0
 for layer in network:
     if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
         continue
-    if layer.name in except_layer:
+    if layer.type not in [trt.LayerType.CONVOLUTION]:
         continue
-    if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
+    if layer.name[0:5] != "Conv_":
+        continue
+    if layer.name in except_layer or int(layer.name[5:]) > 10000:
         total += 1
         layer.precision = trt.DataType.FLOAT
         for i in range(layer.num_outputs):
