@@ -1,4 +1,5 @@
 # trt-elan
+
 该项目实现了图像超分辨率算法ELAN的TensorRT加速版本。
 
 :construction:**该项目正在施工**。
@@ -15,10 +16,10 @@
 
 使用超分任务常用验证集Manga109作为测试基准数据集，使用NVIDIA A10作为测试机器。加速比计算使用TensorRT运行时间比上PyTorch运行时间。
 
-- FP32下可以做到无损精度，加速比为1.19
-- TF32下可以做到近无损精度，加速比为1.39
-- FP16下可以做到验证集无损精度，加速比为2.14
-- INT8 QAT下理论可达验证集无损精度，加速比为2.53
+- FP32下可无损精度，加速比为1.19
+- TF32下可近无损精度，加速比为1.39
+- FP16下可达验证集无损精度，加速比为1.795
+- INT8 QAT下可达验证集无损精度，加速比为2.0
 
 ### 特性
 
@@ -123,13 +124,13 @@ python test_pref_final.py
 
 ##### 视觉效果
 
-![](assets/pic.jpeg)
+![](./assets/pic.jpeg)
 
 ##### 实验效果
 
 此模型的精度超过了目前超分辨率领域顶尖的SwinIR模型，且计算性能极大提升。
 
-![](assets/tab.jpeg)
+![](./assets/tab.jpeg)
 
 #### 业界实际运用情况
 
@@ -186,6 +187,7 @@ ELAN模型中所包含的乘法计算层主要有矩阵乘和卷积层。于是�
 当确定了精度问题在模型的卷积层中后，接下来我们通过单独将每一个卷积层锁定为FP32后测试精度的方式统计了每一个卷积层对FP16导出模型精度的影响。
 
 我们的测试步骤如下：
+
 1. 将模型设置为FP16模式
 2. 选择一个卷积层，记下层编号，将其精度设置为FP32
 3. 导出模型，测试模型与Pytorch模型的相对误差，记下测试结果
@@ -193,13 +195,13 @@ ELAN模型中所包含的乘法计算层主要有矩阵乘和卷积层。于是�
 
 于是，我们得到了一系列卷积层编号与模型相对误差的对应关系，将其按相对误差排序后绘制为柱状图。结果如下：
 
-![](assets/order.svg)
+![](./assets/order.svg)
 
 结果表明，只有少部分卷积层可以在设置为FP32后让模型相对误差从0.8降低至0.5；大部分卷积层对模型相对误差影响不大。
 
 进一步，我们还绘制了层编号与模型相对误差的对应关系图，结果如下：
 
-![](assets/point.svg)
+![](./assets/point.svg)
 
 很明显，这些对精度影响较大的卷积层都在ELAN模型结构的解码器部分，且大都位于解码器基本模块的相同位置。
 
@@ -207,13 +209,13 @@ ELAN模型中所包含的乘法计算层主要有矩阵乘和卷积层。于是�
 
 于是，为了获得最大的加速性价比，我们在FP16模式下将这些对精度影响较大的卷积层计算精度锁定为FP32。以这种方式导出的模型与其他方式对比，其结果如下：
 
-导出模式|计算时间(ms)|平均相对误差
--|-|-
-TF32模式直接导出|261.56|0.0141
-FP32模式直接导出|256.76|0.0125
-FP16模式直接导出|178.56|0.7911
-FP16模式下将所有卷积层锁定为FP32导出|245.60|0.0187
-FP16模式下对精度影响较大的卷积层锁定为FP32导出|202.26|0.147
+| 导出模式                                       | 计算时间(ms) | 平均相对误差 |
+| ---------------------------------------------- | ------------ | ------------ |
+| TF32模式直接导出                               | 261.56       | 0.0141       |
+| FP32模式直接导出                               | 256.76       | 0.0125       |
+| FP16模式直接导出                               | 178.56       | 0.7911       |
+| FP16模式下将所有卷积层锁定为FP32导出           | 245.60       | 0.0187       |
+| FP16模式下对精度影响较大的卷积层锁定为FP32导出 | 202.26       | 0.147        |
 
 可以看到，以这种方式导出的模型其计算速度相比于FP16模式直接导出慢大约13%，但相对误差下降了75%。
 
@@ -257,6 +259,8 @@ QAT的过程分为如下几个步骤：
 
 ELAN的主体是由多个ELAB块组成的，而ELAB块主要由LFE和GMSA组成，通过profiling，可以看到主要的计算开销集中在LFE的卷积运算和GMSA的注意力机制矩阵运算中，尤其是LFE的卷积运算占据了大部分计算开销。但GMSA中的很多Reshape操作也占用了大量的计算开销，也许出现大量Reshape操作是由ONNX的图转换造成的，也许这些层可以得到精简或数据复用，为此设计针对GMSA的Plugin也许是有意义的。但是对于LFE而言，它的大量计算都由卷积承担，TensorRT对卷积的优化已经非常好了，设计Plugin能得到的收益有限。尽管看到了实现Plugin能得到的收益潜力，但开发Plugin的代价较大，本项目并没有完成它。
 
+此外，profiling揭示的卷积运算占比重这一现象指导了QAT int8仅对卷积进行量化即可获得客观的加速比。
+
 ## 精度与加速效果
 
 - 使用超分任务常用验证集Manga109作为测试基准数据集，使用NVIDIA A10作为测试机器。
@@ -273,27 +277,48 @@ ELAN的主体是由多个ELAB块组成的，而ELAB块主要由LFE和GMSA组成�
 
 ### 验证集精度
 
-【精度对比表格】
+| 项目                    | PSNR  | SSIN   |
+| ----------------------- | ----- | ------ |
+| PyTorch                 | 31.51 | 0.9232 |
+| TensorRT FP32           | 31.51 | 0.9232 |
+| TensorRT TF32           | 31.51 | 0.9232 |
+| TensorRT FP16           | 31.51 | 0.9231 |
+| TensorRT FP16 optimized |       |        |
 
 ### 张量对齐精度
 
-【张量精度对比表格】
+以PyTorch原始模型推理结果作为基准测试优化后模型的张量对齐精度。
+
+测量指标：
+
+- max-a0：绝对误差最大值
+- med-a0：绝对误差中位数
+- mea-a0：绝对误差平均值
+- max-r0：相对误差最大值
+- med-r0：相对误差中位数
+- mea-r0：相对误差平均值
+
+| 项目                    | max-a0 | med-a0 | mea-a0 | max-r0 | med-r0 | mea-r0 |
+| ----------------------- | ------ | ------ | ------ | ------ | ------ | ------ |
+| ONNX runtime            |        |        |        |        |        |        |
+| TensorRT FP32           |        |        |        |        |        |        |
+| TensorRT TF32           |        |        |        |        |        |        |
+| TensorRT FP16           |        |        |        |        |        |        |
+| TensorRT FP16 optimized |        |        |        |        |        |        |
 
 QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这部分工作仍在推进中，故当前本仓库仅提供了QAT的完整代码，但QAT的完整方案还在生成测试中。
 
 ### 量化精度对比
 
-PyTorch
-
-PTQ
-
-QAT
-
-
+| 项目                                                 | PSNR  | SSIN   |
+| ---------------------------------------------------- | ----- | ------ |
+| PyTorch (1 train epoch)                              | 28.36 | 0.8739 |
+| TensorRT INT8 PTQ (full)                             | 10.04 | 0.4834 |
+| TensorRT INT8 QAT (1 train epoch, 1 fine-tune epoch) | 29.28 | 0.8922 |
 
 ## 仍然存在的问题
 
-- 暂时未能支持Dynamic Shape，【描述】
+- 暂时未能支持Dynamic Shape
 
 ## Bug报告
 
@@ -302,6 +327,7 @@ QAT
 已发布于[ReflectPadding Parse Error · Issue #34 · NVIDIA/trt-samples-for-hackathon-cn ](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/issues/34)。
 
 - Environment
+
   - NVIDIA A10
   - TensorRT 8.4GA
   - CUDA 11.6
@@ -310,10 +336,11 @@ QAT
   - NVIDIA Driver 510.73.08
 
 - Reproduction Steps
+
   - CASE
-  
+
     - `unit.py`: Generate ONNX graph with a `Pad` layer with `reflect` mode.
-  
+
       ```python
       import torch
       import torch.nn as nn
@@ -345,9 +372,9 @@ QAT
                         opset_version=13,
                         dynamic_axes={"input": {0: "batch_size"}})
       ```
-  
+
     - `parse.sh`: parse the onnx graph generated
-  
+
       ```sh
       #!/usr/bin/env bash
       python3 unit.py
@@ -364,19 +391,20 @@ QAT
               --noTF32 \
               --verbose \
       ```
-  
+
   - Run this case:
-  
+
     ```sh
     bash parse.sh
     ```
-  
+
 - Expected Behavior
 
   - Reffered from [Release TensorRT OSS v8.2.0 EA](https://github.com/NVIDIA/TensorRT/releases/tag/8.2.0-EA), TensorRT parser supported `Pad` layer in ONNX, especially ND padding, along with `reflect` padding mode.
   - So that this case can parse the graph and generate a TensorRT plan successfully.
 
 - Actual Behavior
+
   - Error occurred:
 
     ```sh
@@ -394,6 +422,7 @@ QAT
     ```
 
 - Additional Notes
+
   - After I propose this problem, NVDIA give a workaround can be used to solve this problem temporally: [padNode-war](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/tree/master/cookbook/06-PluginAndParser/pyTorch-PadNode) .
   - There are many existing posts with this problem need help:
     - [Reflect padding in TensorRT - Deep Learning (Training & Inference) / TensorRT - NVIDIA Developer Forums](https://forums.developer.nvidia.com/t/reflect-padding-in-tensorrt/187326)

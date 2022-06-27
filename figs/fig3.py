@@ -16,9 +16,9 @@ x = np.arange(len(items))
 pytorch = 359
 trt_fp32 = 301
 trt_tf32 = 259
-trt_fp16 = 168
+trt_fp16 = 200
 trt_int8_ptq = 142
-trt_int8_qat = 142
+trt_int8_qat = 179
 
 width = 0.8
 n = 1
