@@ -38,14 +38,13 @@
 
 #### 项目实验平台
 
-
-
-
 #### 准备数据集
 
 1. 下载数据集：[url] (pwd: al4m)
-
 2. 解压数据集，得到数据集目录`SR_datasets`放至`./datasets/`
+3. 在`weights`文件夹中放置以下文件：
+   * model_x4_437.pt：PyTorch原始权重文件
+   * model_x4_1.pt：QAT过程中训练得到的单epoch QDQELAN训练结果
 
 #### 安装
 
@@ -58,17 +57,22 @@ docker build -t trt-elan .
 ##### 启动
 
 ```sh
-docker run --rm -it -v $(pwd)/src:/src trt-elan
+docker run --rm -it -v $(pwd)/datasets:/workspace/trt-elan/datasets -v $(pwd)/weights:/workspace/trt-elan/weights -v $(pwd)/src:/workspace/trt-elan/src trt-elan
 ```
 
+##### 导出ONNX
 
-#### 使用
+```sh
+python export_onnx.py --config ../configs/elan_x4_pretrained.yml
+python surgeon_onnx.py
+```
 
 ##### 以不同模式导出模型并进行精度对比
 
 ###### 直接使用`trtexec`导出模型
 
 ```sh
+./parse_onxx.sh # 以fp32模式导出模型
 ./parse_onxx_tf32.sh # 以tf32模式导出模型
 ./parse_onxx_fp16.sh # 以fp16模式导出模型
 python parse_onxx_all_layer.py # 以fp16模式导出模型
@@ -113,7 +117,7 @@ Python脚本`test_pref.py`会分别读取以下模型文件进行精度测试，
 
 我们首先FP16模式下分别将每一个卷积层设置为FP32模式，从而生成约200个plan文件，在每个plan文件生成后随即进行测试，进而又生成约200个测试结果：
 ```python
-python test_pref.py
+python test_perf.py
 ```
 
 此过程在A10 GPU上耗时约72小时。
@@ -129,7 +133,7 @@ python layer_delay_count.py
 
 ```python
 python parse_onxx_final.py
-python test_pref_final.py
+python test_perf_final.py
 ```
 
 ## 原始模型
