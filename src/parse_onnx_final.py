@@ -5,7 +5,7 @@ import tensorrt as trt
 
 
 onnxFile = "./elan_x4_sed.onnx"
-trtFile = "./elan_x4_partly_half.plan"
+trtFile = "./elan_x4_final.plan"
 
 cudart.cudaDeviceSynchronize()
 
@@ -29,16 +29,37 @@ with open(onnxFile, 'rb') as model:
         exit()
     print("Succeeded parsing .onnx file!")
 
+except_layer = [
+    'Conv_6885',
+    'Conv_9344',
+    'Conv_7698',
+    'Conv_8528',
+    'Conv_7712',
+    'Conv_9333',
+    'Conv_10976',
+    'Conv_8978',
+    'Conv_9335',
+    'Conv_6530',
+    'Conv_10152',
+    'Conv_6533',
+    'Conv_6882',
+    'Conv_10608',
+    'Conv_8982',
+    'Conv_10146',
+]
+
 total = 0
 for layer in network:
     if layer.precision != trt.DataType.FLOAT and layer.precision != trt.DataType.HALF:
+        continue
+    if layer.name in except_layer:
         continue
     if layer.type in [trt.LayerType.CONVOLUTION, trt.LayerType.MATRIX_MULTIPLY]:
         total += 1
         layer.precision = trt.DataType.FLOAT
         for i in range(layer.num_outputs):
             layer.get_output(i).dtype = trt.DataType.FLOAT
-        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+        print(total, layer.name, layer.type,layer.precision, layer.precision_is_set)
 
 lr = network.get_input(0)
 

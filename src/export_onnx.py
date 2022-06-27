@@ -49,6 +49,6 @@ if __name__ == "__main__":
                       input_names=input_names,
                       output_names=output_names,
                       verbose=True,
-                      opset_version=15,
+                      opset_version=11,
                       dynamic_axes={"lr": {0: "batch_size", 2: "width", 3: "height"},
                                     "hr": {0: "batch_size", 2: "width", 3: "height"}})
