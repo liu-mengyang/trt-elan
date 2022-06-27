@@ -86,13 +86,11 @@
 
 ### 预处理部分的不同处理方式
 
-修剪图。
+ELAN超分模型在初始时有一个比例化图像剪裁的预处理工作，这部分实际也是由多个OP组成的，所以可以被TensorRT加速。
 
-遭遇ReflectPadding不成功支持BUG。
+- 但TensorRT 8.4GA暂不支持模运算操作，为此需要对于MOD_13 OP `a % b` 使用 `a - a // b * b`代替，即使用一个SUB和一个DIV代替。
 
-可参考玮神给出的Workaround进行支持。
-
-也可直接跳过对预处理过程的TRT化。
+- 然而接下来遭遇了ReflectPadding不成功支持的BUG，这与[Release TensorRT OSS v8.2.0 EA · NVIDIA/TensorRT](https://github.com/NVIDIA/TensorRT/releases/tag/8.2.0-EA)中对于N维ReflectPadding提供支持的描述矛盾，且在全网已有多个相关帖子指向这一不支持问题，我们认为这是一个值得关注的BUG，书写在了后续的[BUG报告](https://github.com/liu-mengyang/trt-elan#bug报告)中。对于该问题我们的处理是暂时跳过预处理部分，舍弃这一部分的TensorRT加速，优先处理网络运算主体部分。当然，也可以参考我们提出该问题后，NVIDIA及时响应给出的[workaround](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/tree/master/cookbook/06-PluginAndParser/pyTorch-PadNode)。
 
 ### FP32导出
 
