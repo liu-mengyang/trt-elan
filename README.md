@@ -428,13 +428,6 @@ QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这�
     - [Reflect padding in TensorRT - Deep Learning (Training & Inference) / TensorRT - NVIDIA Developer Forums](https://forums.developer.nvidia.com/t/reflect-padding-in-tensorrt/187326)
     - [Pad opset 11 not supported · Issue #378 · onnx/onnx-tensorrt (github.com)](https://github.com/onnx/onnx-tensorrt/issues/378)
 
-## 经验与体会
-
-
-
-
-
-
 ## 相关的项目
 
 - ELAN算法的官方仓库：[xindongzhang](https://github.com/xindongzhang)/[ELAN](https://github.com/xindongzhang/ELAN)
