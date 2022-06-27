@@ -61,7 +61,7 @@ for layer in network:
         continue
     if layer.name[0:5] != "Conv_":
         continue
-    if layer.name in except_layer or int(layer.name[5:]) > 13000:
+    if layer.name in except_layer:
         total += 1
         layer.precision = trt.DataType.FLOAT
         for i in range(layer.num_outputs):
