@@ -416,7 +416,7 @@ for layer in network:
         layer.precision = trt.DataType.FLOAT
         for i in range(layer.num_outputs):
             layer.get_output(i).dtype = trt.DataType.FLOAT
-        print(total, layer.name, layer.type, layer.precision, layer.precision_is_set)
+        print(layer.name, layer.type, layer.precision, layer.precision_is_set)
         
         lr = network.get_input(0)
         
@@ -493,7 +493,7 @@ for layer in network:
     print(string)
     
     with open((trtFile32 % layer.name)+'.txt', 'w') as f:
-        f.write(time_trt+","+string)
+        f.write("%s"%time_trt+","+string)
 
 
     cudart.cudaFree(inputD0)
