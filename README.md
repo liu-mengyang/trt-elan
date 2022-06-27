@@ -183,6 +183,8 @@ QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这�
 
 ### ReflectPadding Parse Error
 
+已发布于[ReflectPadding Parse Error · Issue #34 · NVIDIA/trt-samples-for-hackathon-cn ](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/issues/34)。
+
 - Environment
   - NVIDIA A10
   - TensorRT 8.4GA
@@ -192,13 +194,94 @@ QAT的INT8量化能带来更好的性能，但它需要重新训练模型，这�
   - NVIDIA Driver 510.73.08
 
 - Reproduction Steps
-  - 运行单元测试程序
+  - CASE
+  
+    - `unit.py`: Generate ONNX graph with a `Pad` layer with `reflect` mode.
+  
+      ```python
+      import torch
+      import torch.nn as nn
+      import torch.nn.functional as F
+      
+      
+      
+      class ReflectPad(nn.Module):
+          def __init__(self):
+              super(ReflectPad, self).__init__()
+      
+          def forward(self, input):
+              out = F.pad(input, (0, 1, 0, 2), "reflect")
+              return out
+      
+      input = torch.arange(9, dtype=torch.float).reshape(1, 1, 3, 3).cuda()
+      print(input)
+      rp = ReflectPad().cuda()
+      out = rp(input)
+      print(out)
+      
+      torch.onnx.export(rp,
+                        input,
+                        "unit.onnx",
+                        input_names=["input"],
+                        output_names=["output"],
+                        verbose=True,
+                        keep_initializers_as_inputs=True,
+                        opset_version=13,
+                        dynamic_axes={"input": {0: "batch_size"}})
+      ```
+  
+    - `parse.sh`: parse the onnx graph generated
+  
+      ```sh
+      #!/usr/bin/env bash
+      python3 unit.py
+      
+      trtexec \
+              --onnx=unit.onnx \
+              --explicitBatch \
+              --minShapes=lr:1x3x64x64 \
+              --optShapes=lr:1x3x80x80 \
+              --maxShapes=lr:1x3x120x120 \
+              --saveEngine=unit.plan \
+              --workspace=40960 \
+              --buildOnly \
+              --noTF32 \
+              --verbose \
+      ```
+  
+  - Run this case:
+  
+    ```sh
+    bash parse.sh
+    ```
+  
 - Expected Behavior
-  - 根据【官方更新信息】，应该可以正确导出该OP，且支持reflect模式
+
+  - Reffered from [Release TensorRT OSS v8.2.0 EA](https://github.com/NVIDIA/TensorRT/releases/tag/8.2.0-EA), TensorRT parser supported `Pad` layer in ONNX, especially ND padding, along with `reflect` padding mode.
+  - So that this case can parse the graph and generate a TensorRT plan successfully.
+
 - Actual Behavior
-  - Error
+  - Error occurred:
+
+    ```sh
+    [06/27/2022-11:15:47] [E] [TRT] ModelImporter.cpp:776: --- End node ---
+    [06/27/2022-11:15:47] [E] [TRT] ModelImporter.cpp:779: ERROR: ModelImporter.cpp:180 In function parseGraph:
+    [6] Invalid Node - Pad_13
+    [shuffleNode.cpp::symbolicExecute::392] Error Code 4: Internal Error (Reshape_3: IShuffleLayer applied to shape tensor must have 0 or 1 reshape dimensions: dimensions were [-1,2])
+    [06/27/2022-11:15:47] [E] Failed to parse onnx file
+    [06/27/2022-11:15:47] [I] Finish parsing network model
+    [06/27/2022-11:15:47] [E] Parsing model failed
+    [06/27/2022-11:15:47] [E] Failed to create engine from model or file.
+    [06/27/2022-11:15:47] [E] Engine set up failed
+    &&&& FAILED TensorRT.trtexec [TensorRT v8401] # trtexec --onnx=unit.onnx --explicitBatch --minShapes=lr:1x3x64x64 --optShapes=lr:1x3x80x80 --maxShapes=lr:1x3x120x120 --saveEngine=unit.plan --workspace=40960 --buildOnly --noTF32 --verbose
+    
+    ```
+
 - Additional Notes
-  - 可暂时参考玮神给出的workaround解决该问题。可以对应支持到一些未能给出解答的帖子。
+  - After I propose this problem, NVDIA give a workaround can be used to solve this problem temporally: [padNode-war](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/tree/master/cookbook/06-PluginAndParser/pyTorch-PadNode) .
+  - There are many existing posts with this problem need help:
+    - [Reflect padding in TensorRT - Deep Learning (Training & Inference) / TensorRT - NVIDIA Developer Forums](https://forums.developer.nvidia.com/t/reflect-padding-in-tensorrt/187326)
+    - [Pad opset 11 not supported · Issue #378 · onnx/onnx-tensorrt (github.com)](https://github.com/onnx/onnx-tensorrt/issues/378)
 
 ## 经验与体会
 
