@@ -183,13 +183,21 @@ INT8量化后的模型`elan_x4_int8.plan`得到生成。
   如此，可以得到预训练1个epoch的模型`model_x4_1.pt`在`./experiments`中，将模型复制到`weights`目录下。
 
 
-2. TensorRT INT8 量化
+2. 模型微调
 
   ```sh
   python qat_calib.py --config ../../configs/elan_x4_qat.yml
   ```
 
-  如此，可以得到生成的INT8模型`elan_x4_qat_1f1.plan`。
+  如此，可以得到生成的INT8模型`elan_x4_qat_1f1.onnx`。
+  
+3. TensorRT量化
+
+  ```sh
+  bash parse_onnx.sh
+  ```
+  
+  得到生成的TensorRT engine`elan_x4_qat_1f1.plan`。
 
 ##### 测试量化精度
 
