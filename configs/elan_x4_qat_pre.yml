@@ -31,7 +31,7 @@ gpu_ids: [4,5,6,7]
 threads: 8
 
 ## data specification
-data_path: '/dataset/SR_datasets'
+data_path: '/datasets/SR_datasets'
 pretrain:
 #eval_sets: ['Set5', 'Set14', 'B100', 'Urban100', 'Manga109']
 eval_sets: ['Manga109']
