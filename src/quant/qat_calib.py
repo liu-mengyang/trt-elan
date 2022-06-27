@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # finetune in pyTorch
     model.cuda()
     
-    for epoch in range(10):
+    for epoch in range(1):
         epoch_loss = 0.0
         model = model.train()
         opt_lr = scheduler.get_last_lr()
@@ -214,3 +214,25 @@ if __name__ == '__main__':
             name, args.scale, float(avg_psnr), float(avg_ssim)
         )
     print(test_log)
+
+    # export to ONNX
+    model.eval()
+    qnn.TensorQuantizer.use_fb_fake_quant = True
+    input_data = torch.randn(1, 3, 80, 80, dtype=torch.float32, device='cuda')
+    
+    input_names = ['lr']
+    output_names = ['hr']
+    
+    torch.onnx.export(model.module,
+                      input_data,
+                      'elan_x4_qat_3f1.onnx',
+                      input_names=input_names,
+                      output_names=output_names,
+                      do_constant_folding=True,
+                      verbose=True,
+                      keep_initializers_as_inputs=True,
+                      opset_version=15,
+                      dynamic_axes={"lr": {0: "batch_size", 2: "width", 3: "height"},
+                                    "hr": {0: "batch_size", 2: "width", 3: "height"}})
+    
+    print("Succeeded converting model into onnx!")

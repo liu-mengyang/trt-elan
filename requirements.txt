@@ -7,5 +7,6 @@ scikit-image
 einops
 timm
 onnxruntime-gpu
-pytorch-quantization
 nvidia-pyindex
+pytorch-quantization
+matplotlib
